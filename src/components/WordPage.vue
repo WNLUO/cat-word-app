@@ -3,11 +3,11 @@
     <!-- 头部 -->
     <div class="header">
       <div class="logo-area">
-        <img src="/logo.png" alt="logo" class="header-logo">
+        <img :src="logoImage" alt="logo" class="header-logo">
         <span class="app-name">蒸蚌背单词</span>
       </div>
       <div class="header-right">
-        
+
         <div class="score-display">
           <svg class="fish-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M20.5 10C21.5 10 22 9.5 22 8.5C22 7.5 21 6 20 6C18.5 6 16.5 8 16.5 8C16.5 8 14 5 11 5C7 5 3 9 3 12C3 15 7 19 11 19C14 19 16.5 16 16.5 16C16.5 16 18.5 18 20 18C21 18 22 16.5 22 15.5C22 14.5 21.5 14 20.5 14C19.5 14 18 13 18 12C18 11 19.5 10 20.5 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -97,15 +97,22 @@
     
 
     <!-- 音频元素 -->
-    <audio ref="correctSound" src="/correct.mp3" preload="auto"></audio>
-    <audio ref="wrongSound" src="/wrong.mp3" preload="auto"></audio>
-    <audio ref="zhengbangSound" src="/correct.mp3" preload="auto"></audio>
+    <audio ref="correctSound" :src="correctAudio" preload="auto"></audio>
+    <audio ref="wrongSound" :src="wrongAudio" preload="auto"></audio>
+    <audio ref="zhengbangSound" :src="correctAudio" preload="auto"></audio>
   </div>
 </template>
 
 <script>
 import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import wordsData from '../words.js'
+import logoImage from '../assets/images/logo.png'
+import catImageBase from '../assets/images/cat.png'
+import leftImage from '../assets/images/左边.png'
+import middleImage from '../assets/images/中间.png'
+import rightImage from '../assets/images/右边.png'
+import correctAudio from '../assets/media/correct.mp3'
+import wrongAudio from '../assets/media/wrong.mp3'
 
 export default {
   name: 'WordPage',
@@ -118,7 +125,7 @@ export default {
     const showModal = ref(false)
     const options = ref([])
     const optionStates = ref(['', '', ''])
-    const catImage = ref('/cat.png')
+    const catImage = ref(catImageBase)
     const scorePop = ref(false)
     const isSelectOpen = ref(false)
 
@@ -232,7 +239,7 @@ export default {
     const showWord = () => {
       if (words.value.length === 0) return
       optionStates.value = ['', '', '']
-      catImage.value = '/cat.png'
+      catImage.value = catImageBase
       const word = currentWord.value
       const correctAnswer = word.tranCN
       const opts = [correctAnswer]
@@ -311,8 +318,8 @@ export default {
       const correctAnswer = currentWord.value.tranCN
 
       // 根据点击位置显示对应图片（无论对错）
-      const positionImages = ['/左边.png', '/中间.png', '/右边.png']
-      catImage.value = positionImages[index] || '/cat.png'
+      const positionImages = [leftImage, middleImage, rightImage]
+      catImage.value = positionImages[index] || catImageBase
 
       if (option === correctAnswer) {
         // 答对了
@@ -432,7 +439,10 @@ export default {
       prevWord,
       nextWord,
       selectBook,
-      closeModalOutside
+      closeModalOutside,
+      logoImage,
+      correctAudio,
+      wrongAudio
     }
   }
 }

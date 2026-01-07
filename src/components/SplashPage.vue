@@ -2,12 +2,12 @@
   <div class="page splash-page active">
     <div class="splash-header">
       <div class="splash-logo-area" :class="{ shrink: isAnimating }">
-        <img src="/logo.png" alt="logo" class="splash-header-logo">
+        <img :src="logoImage" alt="logo" class="splash-header-logo">
         <span class="splash-app-name">蒸蚌背单词</span>
       </div>
     </div>
     <div class="splash-content" @click="handleClick">
-      <img src="/splash.png" alt="欢迎" class="splash-image" :class="{ shrink: isAnimating }">
+      <img :src="splashImage" alt="欢迎" class="splash-image" :class="{ shrink: isAnimating }">
       <p class="splash-hint" :class="{ hide: isAnimating }">点击开始</p>
     </div>
   </div>
@@ -15,6 +15,8 @@
 
 <script>
 import { ref } from 'vue'
+import logoImage from '../assets/images/logo.png'
+import splashImage from '../assets/images/splash.png'
 
 export default {
   name: 'SplashPage',
@@ -32,7 +34,9 @@ export default {
 
     return {
       isAnimating,
-      handleClick
+      handleClick,
+      logoImage,
+      splashImage
     }
   }
 }
