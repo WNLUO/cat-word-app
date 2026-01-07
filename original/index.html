@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>背单词</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 启动页 -->
+    <div id="splash-page" class="page active">
+        <div class="splash-header">
+            <div class="splash-logo-area" id="splash-logo-area">
+                <img src="assets/logo.jpg" alt="logo" class="splash-header-logo" id="splash-header-logo">
+                <span class="splash-app-name" id="splash-app-name">蒸蚌背单词</span>
+            </div>
+        </div>
+        <div class="splash-content">
+            <img src="assets/splash.jpg" alt="欢迎" class="splash-image" id="splash-img">
+            <p class="splash-hint">点击开始</p>
+        </div>
+    </div>
+
+    <!-- 背单词页 -->
+    <div id="word-page" class="page">
+        <div class="header">
+            <div class="logo-area">
+                <img src="assets/logo.jpg" alt="logo" class="header-logo">
+                <span class="app-name">蒸蚌背单词</span>
+            </div>
+            <div class="header-right">
+                <div class="pure-mode-toggle">
+                    <span class="pure-mode-label">纯净模式</span>
+                    <label class="switch">
+                        <input type="checkbox" id="pure-mode-switch">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <button id="zhengbang-btn" class="zhengbang-btn">蒸蚌</button>
+                <div class="score-display">
+                    <span class="fish-icon">🐟</span>
+                    <span class="fish-label">×</span>
+                    <span id="score-count">0</span>
+                </div>
+            </div>
+        </div>
+        <div class="book-selector">
+            <select id="book-select" class="book-select">
+                <option value="CET4_1">四级核心词汇</option>
+                <option value="CET4_3">四级完整词汇</option>
+                <option value="CET6_1">六级核心词汇</option>
+                <option value="CET6_3">六级完整词汇</option>
+                <option value="KaoYan_1">考研必考词汇</option>
+                <option value="KaoYan_2">考研完整词汇</option>
+            </select>
+        </div>
+
+        <div class="word-container">
+            <div class="word-display">
+                <span id="english-word">Loading...</span>
+                <button id="sound-btn" class="sound-btn">🔊</button>
+            </div>
+            <div class="phonetic-display">
+                <span class="phonetic-label">美</span>
+                <span id="phonetic-text">[...]</span>
+            </div>
+            
+            <div class="image-container">
+                <img src="assets/cat.jpg" alt="配图" class="word-image">
+            </div>
+
+            <p class="hint-text">请点击正确单词释义</p>
+
+            <div class="options-container" id="options">
+                <!-- 选项按钮动态生成 -->
+            </div>
+        </div>
+
+        <div class="nav-footer">
+            <button id="prev-btn" class="nav-btn">‹</button>
+            <button id="next-btn" class="nav-btn">›</button>
+        </div>
+    </div>
+
+    <!-- 蒸蚌弹窗 -->
+    <div id="zhengbang-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" id="modal-close">&times;</span>
+            <h3 class="modal-title">关注蒸蚌</h3>
+            <p class="modal-subtitle">欢迎您给出宝贵的优化建议</p>
+            <div class="modal-images">
+                <div class="modal-img-item">
+                    <img src="assets/douyin.jpg" alt="作者抖音">
+                    <p>作者抖音</p>
+                </div>
+                <div class="modal-img-item">
+                    <img src="assets/group.jpg" alt="交流群">
+                    <p>交流群</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 音频元素 -->
+    <audio id="correct-sound" src="assets/correct.mp3" preload="auto"></audio>
+    <audio id="wrong-sound" src="assets/wrong.mp3" preload="auto"></audio>
+    <audio id="zhengbang-sound" src="assets/correct.mp3" preload="auto"></audio>
+
+    <script src="js/words.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
