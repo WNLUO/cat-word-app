@@ -254,6 +254,9 @@ export default {
 
       // 停止之前的语音
       if (currentUtterance) {
+        // 移除旧的事件监听器，避免触发 onerror
+        currentUtterance.onend = null
+        currentUtterance.onerror = null
         speechSynthesis.cancel()
         currentUtterance = null
       }
@@ -278,9 +281,12 @@ export default {
           }
         }
 
-        // 监听错误
+        // 监听错误（忽略 interrupted 错误）
         utterance.onerror = (event) => {
-          console.error('语音播放错误:', event.error)
+          // interrupted 错误是正常的（切换单词时取消上一个语音）
+          if (event.error !== 'interrupted') {
+            console.error('语音播放错误:', event.error)
+          }
           currentUtterance = null
           if (onEndCallback && typeof onEndCallback === 'function') {
             onEndCallback()
