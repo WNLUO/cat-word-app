@@ -7,14 +7,7 @@
         <span class="app-name">蒸蚌背单词</span>
       </div>
       <div class="header-right">
-        <div class="pure-mode-toggle">
-          <span class="pure-mode-label">纯净模式</span>
-          <label class="switch">
-            <input type="checkbox" v-model="pureMode">
-            <span class="slider"></span>
-          </label>
-        </div>
-        <button @click="showModal = true" class="zhengbang-btn">蒸蚌</button>
+        
         <div class="score-display">
           <svg class="fish-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M20.5 10C21.5 10 22 9.5 22 8.5C22 7.5 21 6 20 6C18.5 6 16.5 8 16.5 8C16.5 8 14 5 11 5C7 5 3 9 3 12C3 15 7 19 11 19C14 19 16.5 16 16.5 16C16.5 16 18.5 18 20 18C21 18 22 16.5 22 15.5C22 14.5 21.5 14 20.5 14C19.5 14 18 13 18 12C18 11 19.5 10 20.5 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -101,28 +94,7 @@
       </button>
     </div>
 
-    <!-- 蒸蚌弹窗 -->
-    <div v-if="showModal" class="modal active" @click="closeModalOutside">
-      <div class="modal-content" @click.stop>
-        <button class="modal-close-btn" @click="showModal = false">
-          <svg viewBox="0 0 24 24" fill="none" class="icon-svg">
-            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button>
-        <h3 class="modal-title">关注蒸蚌</h3>
-        <p class="modal-subtitle">欢迎您给出宝贵的优化建议</p>
-        <div class="modal-images">
-          <div class="modal-img-item">
-            <img src="/douyin.png" alt="作者抖音">
-            <p>作者抖音</p>
-          </div>
-          <div class="modal-img-item">
-            <img src="/group.png" alt="交流群">
-            <p>交流群</p>
-          </div>
-        </div>
-      </div>
-    </div>
+    
 
     <!-- 音频元素 -->
     <audio ref="correctSound" src="/correct.mp3" preload="auto"></audio>
@@ -143,7 +115,6 @@ export default {
     const currentIndex = ref(0)
     const words = ref([])
     const score = ref(0)
-    const pureMode = ref(false)
     const showModal = ref(false)
     const options = ref([])
     const optionStates = ref(['', '', ''])
@@ -164,6 +135,11 @@ export default {
     const correctSound = ref(null)
     const wrongSound = ref(null)
     const zhengbangSound = ref(null)
+
+    // 语音相关状态
+    let selectedVoice = null
+    let voicesLoaded = false
+    let currentUtterance = null
 
     // 计算属性
     const currentWord = computed(() => words.value[currentIndex.value])
@@ -193,12 +169,63 @@ export default {
       return first.length > maxLen ? first.slice(0, maxLen) + '...' : first
     }
 
+    // 初始化语音系统
+    const initVoices = () => {
+      if (!('speechSynthesis' in window)) {
+        console.warn('浏览器不支持语音合成')
+        return
+      }
+
+      const loadVoices = () => {
+        const voices = speechSynthesis.getVoices()
+
+        if (voices.length === 0) {
+          return // 语音列表还未加载
+        }
+
+        // 优先选择高质量的英文语音
+        selectedVoice =
+          voices.find(v => v.name.includes('Google') && v.lang === 'en-US') ||
+          voices.find(v => v.name.includes('Microsoft') && v.name.includes('David')) ||
+          voices.find(v => v.name.includes('Microsoft') && v.lang.startsWith('en-US')) ||
+          voices.find(v => v.lang === 'en-US') ||
+          voices.find(v => v.lang.startsWith('en-'))
+
+        voicesLoaded = true
+
+        if (selectedVoice) {
+          console.log('已选择语音:', selectedVoice.name, selectedVoice.lang)
+        } else {
+          console.warn('未找到合适的英文语音，将使用默认语音')
+        }
+      }
+
+      // 立即尝试加载
+      loadVoices()
+
+      // 监听语音列表变化事件
+      if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = loadVoices
+      }
+
+      // 如果1秒后仍未加载，再次尝试
+      setTimeout(() => {
+        if (!voicesLoaded) {
+          loadVoices()
+        }
+      }, 1000)
+    }
+
     // 加载单词
     const loadWords = () => {
       const bookData = wordsData[currentBook.value]
       if (!bookData || bookData.length === 0) return
       words.value = shuffleArray([...bookData]).slice(0, 50)
       showWord()
+      // 自动朗读第一个单词
+      setTimeout(() => {
+        speakWord()
+      }, 300)
     }
 
     // 显示当前单词
@@ -217,13 +244,57 @@ export default {
       options.value = shuffleArray(opts)
     }
 
-    // 发音
-    const speakWord = () => {
-      if (currentWord.value && 'speechSynthesis' in window) {
+    // 发音（优化版）
+    const speakWord = (onEndCallback = null) => {
+      if (!currentWord.value || !('speechSynthesis' in window)) {
+        console.warn('语音功能不可用')
+        if (onEndCallback && typeof onEndCallback === 'function') onEndCallback()
+        return null
+      }
+
+      // 停止之前的语音
+      if (currentUtterance) {
+        speechSynthesis.cancel()
+        currentUtterance = null
+      }
+
+      try {
         const utterance = new SpeechSynthesisUtterance(currentWord.value.headWord)
+
+        // 设置语音参数
+        if (selectedVoice) {
+          utterance.voice = selectedVoice
+        }
         utterance.lang = 'en-US'
-        utterance.rate = 0.8
+        utterance.rate = 0.85
+        utterance.pitch = 1.0
+        utterance.volume = 1.0
+
+        // 监听播放完成
+        utterance.onend = () => {
+          currentUtterance = null
+          if (onEndCallback && typeof onEndCallback === 'function') {
+            onEndCallback()
+          }
+        }
+
+        // 监听错误
+        utterance.onerror = (event) => {
+          console.error('语音播放错误:', event.error)
+          currentUtterance = null
+          if (onEndCallback && typeof onEndCallback === 'function') {
+            onEndCallback()
+          }
+        }
+
+        currentUtterance = utterance
         speechSynthesis.speak(utterance)
+
+        return utterance
+      } catch (error) {
+        console.error('创建语音失败:', error)
+        if (onEndCallback && typeof onEndCallback === 'function') onEndCallback()
+        return null
       }
     }
 
@@ -244,31 +315,42 @@ export default {
         scorePop.value = true
         setTimeout(() => scorePop.value = false, 300)
 
-        if (pureMode.value) {
-          speakWord()
-        } else {
+          // 普通模式：播放正确音效，音效结束后切换到下一题并朗读
           correctSound.value.currentTime = 0
-          correctSound.value.play()
-        }
 
-        setTimeout(() => {
-          if (currentIndex.value < words.value.length - 1) {
-            currentIndex.value++
-            showWord()
+          const onCorrectSoundEnded = () => {
+            // 切换到下一题
+            if (currentIndex.value < words.value.length - 1) {
+              currentIndex.value++
+              showWord()
+              // 朗读下一个单词
+              setTimeout(() => {
+                speakWord()
+              }, 200)
+            }
+            correctSound.value.removeEventListener('ended', onCorrectSoundEnded)
           }
-        }, 1000)
+          correctSound.value.addEventListener('ended', onCorrectSoundEnded)
+
+          correctSound.value.play()
       } else {
         // 答错了
         optionStates.value[index] = 'wrong'
-        score.value = Math.max(0, score.value - 1)
+        score.value--
         scorePop.value = true
         setTimeout(() => scorePop.value = false, 300)
 
-        if (!pureMode.value) {
+        // 先播放错误音效，然后播放单词
           wrongSound.value.currentTime = 0
+
+          // 监听音效播放完成事件
+          const onSoundEnded = () => {
+            speakWord()
+            wrongSound.value.removeEventListener('ended', onSoundEnded)
+          }
+          wrongSound.value.addEventListener('ended', onSoundEnded)
+
           wrongSound.value.play()
-        }
-        speakWord()
       }
     }
 
@@ -309,6 +391,9 @@ export default {
     })
 
     onMounted(() => {
+      // 初始化语音系统
+      initVoices()
+      // 加载单词
       loadWords()
       window.addEventListener('click', handleGlobalClick)
     })
@@ -322,7 +407,6 @@ export default {
       currentIndex,
       words,
       score,
-      pureMode,
       showModal,
       options,
       optionStates,
@@ -691,59 +775,6 @@ export default {
   cursor: not-allowed;
 }
 
-/* 纯净模式开关 */
-.pure-mode-toggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.pure-mode-label {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 36px;
-  height: 20px;
-}
-
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background-color: #ddd;
-  transition: 0.3s;
-  border-radius: 20px;
-}
-
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 16px;
-  width: 16px;
-  left: 2px;
-  bottom: 2px;
-  background-color: white;
-  transition: 0.3s;
-  border-radius: 50%;
-}
-
-input:checked + .slider {
-  background-color: var(--primary-color);
-}
-
-input:checked + .slider:before {
-  transform: translateX(16px);
-}
 
 .zhengbang-btn {
   background: var(--white);
